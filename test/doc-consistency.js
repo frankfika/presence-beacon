@@ -14,7 +14,8 @@ const ROOT = path.resolve(__dirname, '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 
 const README = read('README.md');
-const MANUAL = read('使用手册.md');
+const MANUAL = read('docs/使用手册.md');
+const ARCH = read('docs/架构说明.md');
 const SERVER = read('server/index.js');
 const DB = read('server/db.js');
 const SECRET = read('server/secret.js');
@@ -146,6 +147,84 @@ const missing = labels.filter((l) => !MANUAL.includes(l));
 ok('DOC-22', `管理端规则页 ${setFields} 项参数，手册里的名字一字不差`,
   setFields === 9 && missing.length === 0,
   missing.length ? '手册缺: ' + missing.join(' / ') : `${labels.length} 项全部对上`);
+
+/* ── 11. 架构说明 ── */
+{
+  const fs2 = require('node:fs');
+  const lineCount = (f) => fs2.readFileSync(path.join(ROOT, f), 'utf8').split('\n').length - 1;
+
+  // 架构说明里写的行数要跟真值一致
+  const claimed = {
+    'server/index.js': 1136,
+    'server/rules.js': 341,
+    'server/db.js': 394,
+    'server/webauthn.js': 135,
+    'server/secret.js': 67,
+  };
+  const wrongLines = Object.entries(claimed)
+    .filter(([f, n]) => lineCount(f) !== n)
+    .map(([f, n]) => `${f}: 文档说 ${n}，实际 ${lineCount(f)}`);
+  ok('DOC-23', '架构说明里的文件行数跟代码一致',
+    wrongLines.length === 0, wrongLines.join('; ') || Object.keys(claimed).join(' '));
+
+  // 依赖数量
+  const deps = Object.keys(PKG.dependencies).length;
+  ok('DOC-24', `架构说明说的依赖数量（${deps} 个）是对的`,
+    deps === 3 && ARCH.includes(`其余全用 Node 标准库`) && ARCH.includes('`qrcode`'),
+    `package.json 有 ${deps} 个依赖：${Object.keys(PKG.dependencies).join(', ')}`);
+
+  // 表数量（注释里也有这句 CREATE TABLE，得排除掉）
+  const dbSrc = read('server/db.js');
+  const tables = dbSrc.split('\n')
+    .filter((l) => !l.trim().startsWith('*') && !l.trim().startsWith('//'))
+    .filter((l) => l.includes('CREATE TABLE IF NOT EXISTS')).length;
+  ok('DOC-25', `架构说明说的表数量（${tables} 张）是对的`,
+    tables === 8 && ARCH.includes(`${tables} 张表`),
+    `db.js 有 ${tables} 张表`);
+
+  // 架构说明里列的 API 路由必须都真实存在
+  const apiPaths = [...ARCH.matchAll(/`(\/api\/[a-z0-9\/:._-]+)`/g)].map((m) => m[1]);
+  // 从服务端源码里反推真实路由，再跟架构说明列的路径比对
+  const serverRoutes = new Set();
+  for (const m of SERVER.matchAll(/p === '(\/api\/[^']+)'/g)) serverRoutes.add(m[1]);
+  for (const m of SERVER.matchAll(/p\.match\(\/(\^\\\/api.+?)\$\/\)/g)) {
+    // /^\/api\/terminal\/([^/]+)\/session$/ → /api/terminal/:id/session
+    serverRoutes.add(
+      m[1].replace(/^\^/, '').replace(/\$$/, '')
+        .replace(/\\\//g, '/')
+        .replace(/\(\[\^\/\]\+\)/g, ':id')   // 捕获组形式
+        .replace(/\[\^\/\]\+/g, ':id')       // 非捕获形式
+    );
+  }
+  // 把服务端路由编译成匹配器（支持 :id 和 (a|b|c) 分支），反向验证架构说明的路径
+  const toMatcher = (route) => {
+    let s = route.replace(/\./g, '\u0000');   // 先保护字面点号
+    s = s.replace(/:id/g, '[^/]+');
+    s = s.replace(/\u0000/g, '\\.');
+    return new RegExp('^' + s + '$');
+  };
+  const matchers = [...serverRoutes].map(toMatcher);
+  const badPaths = apiPaths.filter((p) => !matchers.some((re) => re.test(p)));
+  ok('DOC-26', `架构说明里列的 ${apiPaths.length} 条 API 路径都真实存在`,
+    badPaths.length === 0,
+    badPaths.length
+      ? '不存在: ' + badPaths.join(', ') + ' | 服务端实际有: ' + [...serverRoutes].sort().join(', ')
+      : `${apiPaths.length} 条全部对上（服务端共 ${serverRoutes.size} 条路由）`);
+
+  // 关键设计决策里的常量必须跟代码一致
+  ok('DOC-27', '架构说明里的去重窗口（30 秒）跟代码一致',
+    /DEDUPE_WINDOW_MS\s*=\s*30\s*\*\s*1000/.test(SERVER) && ARCH.includes('30 秒去重窗'),
+    'DEDUPE_WINDOW_MS');
+  ok('DOC-28', '架构说明里的 scrypt 参数跟代码一致',
+    /N:\s*16384/.test(SECRET) && ARCH.includes('scrypt (N=16384)'),
+    'secret.js SCRYPT.N');
+  ok('DOC-29', '架构说明里的会话 TTL（45 秒）跟 .env.example 一致',
+    /SESSION_TTL_SECONDS=45/.test(ENV) && ARCH.includes('45 秒'),
+    '.env.example');
+  ok('DOC-30', '架构说明提到的设备令牌强弱字段真实存在',
+    /device_strong/.test(read('server/db.js')) && ARCH.includes('device_strong'),
+    'db.js device_strong');
+}
 
 /* ── 输出 ── */
 let fail = 0;
