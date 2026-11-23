@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>在岗哨 · 管理端</title>
+<link rel="icon" href="/icons/icon-192.png">
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="wrap wide">
+
+  <div class="adminbar">
+    <div class="brand"><span class="dot"></span>在岗哨 · 管理端</div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <span id="weekLabel" style="font-size:13px;color:var(--ink-3)"></span>
+      <button class="btn sm ghost inline" id="btnLogout" style="display:none">退出</button>
+    </div>
+  </div>
+
+  <!-- 登录 -->
+  <section class="screen" id="s-login">
+    <div class="card" style="max-width:420px;margin:40px auto">
+      <h3>管理员登录</h3>
+      <div class="field">
+        <label for="admPass">口令</label>
+        <input id="admPass" type="password" autocomplete="current-password">
+      </div>
+      <div id="loginMsg"></div>
+      <button class="btn" id="btnLogin">登录</button>
+    </div>
+  </section>
+
+  <!-- 主界面 -->
+  <section class="screen" id="s-main">
+    <div class="tabs">
+      <button class="tab on" data-tab="t-week">周报</button>
+      <button class="tab" data-tab="t-people">员工</button>
+      <button class="tab" data-tab="t-term">终端</button>
+      <button class="tab" data-tab="t-req">审批</button>
+      <button class="tab" data-tab="t-set">规则</button>
+    </div>
+
+    <div class="tabpane on" id="t-week">
+      <div class="split">
+        <div class="card">
+          <h3 id="weekTitle">本周在岗时长</h3>
+          <div id="bench"></div>
+          <p style="font-size:12.5px;color:var(--ink-3);margin-top:12px">
+            竖线 = 目标线。橙色 = 未达标；斜纹 = 本周有出差（既不计入也不抵扣）。
+          </p>
+          <div style="display:flex;gap:10px;margin-top:12px;flex-wrap:wrap">
+            <button class="btn sm ghost inline" id="btnPrevWeek">← 上一周</button>
+            <button class="btn sm ghost inline" id="btnNextWeek">下一周 →</button>
+            <button class="btn sm inline" id="btnExport">导出 CSV</button>
+          </div>
+        </div>
+        <div class="card">
+          <h3>团队概况</h3>
+          <div id="teamSum"></div>
+          <h3 style="margin-top:20px">每日明细</h3>
+          <div class="tscroll" id="dayDetail"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabpane" id="t-people">
+      <div class="card">
+        <h3>添加员工</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="field"><label for="npName">姓名</label><input id="npName" placeholder="张三"></div>
+          <div class="field"><label for="npSeat">工位 / 岗位</label><input id="npSeat" placeholder="产品"></div>
+        </div>
+        <div class="field"><label for="npTarget">每周目标（小时）</label><input id="npTarget" type="number" min="0" max="80" step="1" value="24"></div>
+        <div id="npMsg"></div>
+        <button class="btn" id="btnAddEmp">添加并生成邀请码</button>
+      </div>
+      <div class="card">
+        <h3>员工列表</h3>
+        <div class="tscroll" id="empList"></div>
+      </div>
+    </div>
+
+    <div class="tabpane" id="t-term">
+      <div class="card">
+        <h3>添加终端</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="field"><label for="ntName">名称</label><input id="ntName" placeholder="办公室前台"></div>
+          <div class="field"><label for="ntLoc">位置</label><input id="ntLoc" placeholder="3 楼工位区"></div>
+        </div>
+        <div id="ntMsg"></div>
+        <button class="btn" id="btnAddTerm">添加终端</button>
+      </div>
+      <div class="card">
+        <h3>终端列表</h3>
+        <div id="termList"></div>
+      </div>
+    </div>
+
+    <div class="tabpane" id="t-req">
+      <div class="card">
+        <h3>待审批</h3>
+        <div class="tscroll" id="reqList"></div>
+      </div>
+      <div class="card">
+        <h3>历史记录</h3>
+        <div class="tscroll" id="reqAll"></div>
+      </div>
+    </div>
+
+    <div class="tabpane" id="t-set">
+      <div class="card">
+        <h3>规则参数</h3>
+        <div id="setFields"></div>
+        <div id="setMsg"></div>
+        <button class="btn" id="btnSaveSet" style="margin-top:12px">保存规则</button>
+      </div>
+    </div>
+  </section>
+</div>
+<script src="/lib.js"></script>
+<script src="/admin.js"></script>
+</body>
+</html>

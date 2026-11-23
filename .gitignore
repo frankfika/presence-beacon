@@ -1,0 +1,17 @@
+node_modules/
+data/
+*.log
+.env
+.env.local
+.DS_Store
+
+# agent 审查过程产物（报告 .md 保留）
+test-reports/shots/
+test-reports/cleanroom/
+test-reports/lab/
+test-reports/*-sim/
+test-reports/out-*.txt
+test-reports/fe-*.json
+test-reports/fixtures*.json
+test-reports/_patch*.py
+test-reports/dbg*.js

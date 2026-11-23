@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#111318">
+<title>在岗哨 · 终端</title>
+<link rel="icon" href="/icons/icon-192.png">
+<link rel="stylesheet" href="/app.css">
+</head>
+<body class="dark">
+
+<div class="term">
+  <div class="top">
+    <div>
+      <div class="clock" id="clock">--:--</div>
+      <div class="date" id="date">—</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:15px;font-weight:600" id="termName">办公室终端</div>
+      <div style="font-size:12px;color:#8a8f99;margin-top:4px" id="termLoc">—</div>
+    </div>
+  </div>
+
+  <div class="mid">
+    <div class="qrwrap">
+      <div class="qrframe" id="qrFrame">
+        <div id="qrHolder" style="width:min(300px,44vw);aspect-ratio:1;display:flex;align-items:center;justify-content:center;color:#999">
+          加载中…
+        </div>
+        <div class="code" id="qrCode">--------</div>
+      </div>
+      <div class="qrstate" id="qrState">扫码后请按指纹确认</div>
+      <div class="qrstate" style="color:#6f747d">二维码 <b id="qrTtl">--</b> 秒后失效</div>
+      <div style="font-size:12.5px;color:#6f747d">长按二维码可查看终端信息</div>
+    </div>
+
+    <div>
+      <div class="statgrid">
+        <div class="stat">
+          <div class="k">今日在场</div>
+          <div class="v" id="sPresent">0 <small>/ 0 人</small></div>
+        </div>
+        <div class="stat">
+          <div class="k">团队本周累计</div>
+          <div class="v" id="sTeam">0 <small>h</small></div>
+        </div>
+      </div>
+      <div style="font-size:12.5px;color:#8a8f99;letter-spacing:.04em;margin-bottom:10px">当前在场</div>
+      <div class="people" id="people"></div>
+      <div style="font-size:12px;color:#6f747d;margin-top:18px;line-height:1.7">
+        签到后请记得<b style="color:#9aa0aa">离开时再扫一次</b>，否则离开时长不会被计算。
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span id="footLeft">目标 24 h / 周</span>
+    <span id="footRight">在岗哨</span>
+  </div>
+</div>
+
+<div class="flash" id="flash">
+  <div class="box">
+    <div class="ring">
+      <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#3ecf8e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+    </div>
+    <div class="nm" id="flashName">—</div>
+    <div class="st" id="flashSub">—</div>
+  </div>
+</div>
+
+<div class="sheet" id="sheet">
+  <div class="inner">
+    <h3>终端信息</h3>
+    <div class="row"><span>终端名称</span><span id="iName">—</span></div>
+    <div class="row"><span>位置</span><span id="iLoc">—</span></div>
+    <div class="row"><span>二维码有效期</span><span id="iTtl">—</span></div>
+    <div class="row"><span>今日在场</span><span id="iPresent">—</span></div>
+    <div class="row"><span>团队本周</span><span id="iTeam">—</span></div>
+    <p style="font-size:12.5px;color:var(--ink-3);margin-top:14px;line-height:1.6">
+      想改目标小时数、员工名单、审批补卡，请打开管理端 <code>/admin</code>，需要管理员口令。
+    </p>
+    <button class="btn" id="iClose">知道了</button>
+  </div>
+</div>
+
+<script src="/lib.js"></script>
+<script src="/terminal.js"></script>
+</body>
+</html>

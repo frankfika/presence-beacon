@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2f6f5e">
+<title>在岗哨 · 员工打卡</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180.png">
+<link rel="stylesheet" href="/app.css">
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero" id="hero">
+    <div class="brand"><span class="dot"></span>在岗哨</div>
+    <div class="sub" id="heroSub">办公室在岗记录</div>
+  </div>
+
+  <!-- ═══ 激活 ═══ -->
+  <section class="screen" id="s-setup">
+    <div class="card">
+      <h3>首次使用 · 激活这个手机</h3>
+      <p style="font-size:13px;color:var(--ink-3);line-height:1.6">
+        找到管理员给你的<strong style="color:var(--ink)">邀请码</strong>，选择你的名字，然后在这台手机上登记一次指纹 / 面容。
+        之后每次打卡都要通过它确认是你本人。
+      </p>
+      <div class="field">
+        <label for="selEmp">你是谁</label>
+        <select id="selEmp"></select>
+      </div>
+      <div class="field">
+        <label for="inpInvite">邀请码（12 位字母数字）</label>
+        <input id="inpInvite" maxlength="16" placeholder="例如 CT7RTLDHWPKS" autocomplete="off" style="text-transform:uppercase;letter-spacing:.08em">
+      </div>
+      <div id="setupMsg"></div>
+      <button class="btn" id="btnRegister">登记指纹 / 面容</button>
+      <div style="text-align:center;margin-top:12px">
+        <button class="btn sm ghost inline" id="btnUsePin">指纹不可用？用员工码</button>
+      </div>
+      <div style="text-align:center;margin-top:8px">
+        <button class="btn sm ghost inline" id="btnRecover">以前激活过？点这里恢复</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 自助恢复 ═══ -->
+  <section class="screen" id="s-recover">
+    <div class="card">
+      <h3>重新激活这台手机</h3>
+      <p style="font-size:13px;color:var(--ink-3);line-height:1.6">
+        清了浏览器缓存、换了手机，或者换了浏览器？<br>
+        这里可以自己恢复，不用找管理员。
+      </p>
+
+      <div class="field">
+        <label for="inpRecName">姓名</label>
+        <input id="inpRecName" placeholder="例如 张三" autocomplete="name">
+      </div>
+      <div class="field">
+        <label for="inpRecSeat">工位（有重名的同事才需要填）</label>
+        <input id="inpRecSeat" placeholder="例如 A区-01" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="inpRecPin">8 位员工码</label>
+        <input id="inpRecPin" maxlength="12" placeholder="你手机上登记过的员工码" autocomplete="off" style="letter-spacing:.08em">
+      </div>
+      <div id="recoverMsg"></div>
+      <button class="btn" id="btnRecoverPin">用员工码恢复</button>
+
+      <div style="height:1px;background:var(--line);margin:18px 0"></div>
+
+      <p style="font-size:13px;color:var(--ink-3);line-height:1.6;margin-bottom:10px">
+        如果这台手机上的指纹 / 面容还能用，<strong style="color:var(--ink)">直接按一次指纹</strong>就能恢复，
+        而且是最安全的方式。
+      </p>
+      <button class="btn ghost" id="btnRecoverBio">用指纹恢复</button>
+      <div style="text-align:center;margin-top:10px">
+        <button class="btn sm ghost inline" id="btnRecoverBack">返回</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 首页 ═══ -->
+  <section class="screen" id="s-home">
+    <div class="who">
+      <div class="avatar" id="hAvatar">—</div>
+      <div><div class="n" id="hName">—</div><div class="s" id="hSub">—</div></div>
+    </div>
+
+    <div class="weekbox">
+      <div class="hd"><span>本周在岗</span><b id="hWeek">— / — h</b></div>
+      <div class="pbar"><i id="hBar" style="width:0%"></i><span class="goalmark" style="left:100%"></span></div>
+      <div class="meta"><span id="hLeft">—</span><span id="hStatus">—</span></div>
+    </div>
+
+    <button class="bigbtn" id="btnCheckin">
+      <div class="t">打卡</div>
+      <div class="s">扫终端二维码 → 按指纹确认</div>
+    </button>
+
+    <div class="card">
+      <div class="row"><span>今日状态</span><span id="hToday">—</span></div>
+      <div class="row"><span>本周还差</span><span id="hGap">—</span></div>
+      <button class="row rowlink" id="btnExceptionRow"><span>补卡 / 请假 / 出差</span><span>›</span></button>
+    </div>
+    <button class="btn ghost" id="btnException">提交补卡或假期申请</button>
+    <button class="btn ghost" id="btnLogout" style="margin-top:10px">退出 / 换人</button>
+  </section>
+
+  <!-- ═══ 扫码 ═══ -->
+  <section class="screen" id="s-scan">
+    <div class="scanbox">
+      <video id="video" playsinline muted></video>
+      <div class="frame"></div>
+      <div class="hint">把摄像头对准办公室那台设备上的二维码</div>
+    </div>
+    <div id="scanMsg"></div>
+    <div class="manual">
+      <div class="field">
+        <label for="inpCode">扫不到？手动输入终端上显示的 8 位码</label>
+        <input id="inpCode" maxlength="8" placeholder="例如 7K9M2XQ4" autocomplete="off" style="text-transform:uppercase">
+      </div>
+      <button class="btn ghost" id="btnManual">用这个码打卡</button>
+      <button class="btn ghost" id="btnBackScan" style="margin-top:8px">返回</button>
+    </div>
+  </section>
+
+  <!-- ═══ 指纹 ═══ -->
+  <section class="screen" id="s-bio">
+    <div class="center">
+      <div class="ring">
+        <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#2f6f5e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 11v3a2 2 0 002 2"/><path d="M8 11V8a4 4 0 118 0v1"/><rect x="4" y="10" width="16" height="11" rx="2"/></svg>
+      </div>
+      <div class="t" id="bioTitle">请验证指纹</div>
+      <div class="s" id="bioSub">系统级验证 · 你的生物特征不会上传<br>验证通过后立即签到</div>
+    </div>
+  </section>
+
+  <!-- ═══ 完成 ═══ -->
+  <section class="screen" id="s-done">
+    <div class="center">
+      <div class="check">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#2f6f5e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+      </div>
+      <div class="t" id="doneTitle">已签到</div>
+      <div class="s" id="doneSub">—</div>
+    </div>
+    <button class="btn" id="btnDoneBack">返回首页</button>
+  </section>
+
+  <!-- ═══ 申请 ═══ -->
+  <section class="screen" id="s-exception">
+    <div class="card">
+      <h3>提交申请</h3>
+      <div class="field">
+        <label for="excType">类型</label>
+        <select id="excType">
+          <option value="adjust">补卡（补一段在岗时长）</option>
+          <option value="leave">请假（从本周目标中扣除）</option>
+          <option value="holiday">法定假日 / 调休（从本周目标中扣除）</option>
+          <option value="travel">出差（既不计入也不抵扣）</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="excDate">日期</label>
+        <input id="excDate" type="date">
+      </div>
+      <div class="field">
+        <label for="excHours">时长（小时）</label>
+        <input id="excHours" type="number" min="0" max="24" step="0.5" value="1">
+      </div>
+      <div class="field">
+        <label for="excNote">说明</label>
+        <textarea id="excNote" rows="2" placeholder="一句话说清楚就行"></textarea>
+      </div>
+      <div id="excMsg"></div>
+      <button class="btn" id="btnExcSubmit">提交给管理员审批</button>
+      <button class="btn ghost" id="btnExcBack" style="margin-top:8px">返回</button>
+    </div>
+  </section>
+
+  <!-- ═══ PIN 打卡 ═══ -->
+  <section class="screen" id="s-pin">
+    <div class="card">
+      <h3>员工码打卡</h3>
+      <p style="font-size:13px;color:var(--ink-3)">指纹不可用时的兜底方式。会标记为「弱验证」，管理员会看到。</p>
+      <div class="field">
+        <label for="inpPin">8 位员工码</label>
+        <input id="inpPin" maxlength="12" placeholder="例如 EJNAYB6S" autocomplete="off" style="text-transform:uppercase;letter-spacing:.08em">
+      </div>
+      <div id="pinMsg"></div>
+      <button class="btn" id="btnPinGo">打卡</button>
+      <button class="btn ghost" id="btnPinBack" style="margin-top:8px">返回</button>
+    </div>
+  </section>
+
+</div>
+<script src="/vendor/jsQR.js"></script>
+<script src="/lib.js"></script>
+<script src="/employee.js"></script>
+</body>
+</html>

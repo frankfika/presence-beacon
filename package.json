@@ -1,0 +1,23 @@
+{
+  "name": "presence-beacon",
+  "version": "1.0.0",
+  "description": "在岗哨 Presence Beacon — 废弃安卓机改造的每周在岗考勤",
+  "main": "server/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server/index.js",
+    "dev": "node --watch server/index.js",
+    "test": "node --test test/*.test.js",
+    "e2e": "node test/e2e.js",
+    "backup": "node scripts/backup.js"
+  },
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@simplewebauthn/server": "^14.1.0",
+    "jsqr": "^1.4.0",
+    "qrcode": "^1.5.4"
+  }
+}
