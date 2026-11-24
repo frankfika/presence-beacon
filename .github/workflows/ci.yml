@@ -39,8 +39,8 @@ jobs:
       - name: 全量回归
         run: node test/run-all.js
 
-      - name: 部署自检（对着刚起的服务）
-        run: node scripts/doctor.js http://localhost:8155 || true
+      - name: 冒烟测试（自己起临时实例）
+        run: node scripts/doctor.js --self-test
 
   docker:
     name: Docker 镜像

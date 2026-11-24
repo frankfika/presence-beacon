@@ -7,6 +7,7 @@
  *   node scripts/doctor.js                      检查本机默认地址
  *   node scripts/doctor.js https://pb.你的域名   检查线上
  *   node scripts/doctor.js http://192.168.1.10:8080
+ *   node scripts/doctor.js --self-test          自己起个临时实例冒烟测一遍
  *
  * 只读，不改任何东西。
  */
@@ -14,10 +15,14 @@ const fs = require('node:fs');
 const path = require('node:path');
 const https = require('node:https');
 const http = require('node:http');
-const { execSync } = require('node:child_process');
+const { spawn } = require('node:child_process');
+const net = require('node:net');
 
 const ROOT = path.resolve(__dirname, '..');
-const target = process.argv[2] || process.env.APP_ORIGIN || 'http://localhost:8080';
+const SELF_TEST = process.argv.includes('--self-test');
+const target = SELF_TEST
+  ? null
+  : (process.argv[2] || process.env.APP_ORIGIN || 'http://localhost:8080');
 
 const results = [];
 let hardFail = 0;
@@ -157,6 +162,77 @@ function checkLocal() {
   } catch { /* noop */ }
 }
 
+/* ── 自检模式：自己起一个临时服务，检查完关掉 ── */
+function freePort() {
+  return new Promise((resolve, reject) => {
+    const srv = net.createServer();
+    srv.once('error', reject);
+    srv.listen(0, '127.0.0.1', () => {
+      const p = srv.address().port;
+      srv.close(() => resolve(p));
+    });
+  });
+}
+
+async function selfTest() {
+  const port = await freePort();
+  const url = `http://localhost:${port}`;
+  const tmpDb = path.join(require('node:os').tmpdir(), `pb-doctor-${process.pid}.db`);
+  for (const suffix of ['', '-wal', '-shm']) {
+    try { fs.unlinkSync(tmpDb + suffix); } catch { /* 不存在 */ }
+  }
+
+  const child = spawn(process.execPath, [path.join(ROOT, 'server', 'index.js')], {
+    cwd: ROOT,
+    env: {
+      ...process.env,
+      PORT: String(port),
+      DB_FILE: tmpDb,
+      RP_ID: 'localhost',
+      APP_ORIGIN: url,
+      ADMIN_PASSWORD: 'doctor-self-test',
+      TZ_OFFSET_MINUTES: '480',
+    },
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+  let stderr = '';
+  child.stderr.on('data', (c) => { stderr += c; });
+  child.stdout.on('data', () => {});
+
+  // 等它就绪
+  let up = false;
+  for (let i = 0; i < 60; i++) {
+    const r = await fetchJson(`${url}/api/health`);
+    if (r.status === 200) { up = true; break; }
+    await new Promise((r2) => setTimeout(r2, 200));
+  }
+
+  ok('服务能启动', up, up ? `临时实例跑在 ${url}` : `起不来：${stderr.slice(-400)}`);
+
+  if (up) {
+    const h = (await fetchJson(`${url}/api/health`)).json || {};
+    ok('健康检查 secure=true（指纹可用）', h.secure === true,
+      h.secure === true ? 'localhost 属于安全上下文 ✓' : '不是安全上下文');
+    ok('RP_ID 和访问域名对得上', h.rpID === 'localhost', `RP_ID=${h.rpID}`);
+    ok('APP_ORIGIN 包含当前访问地址',
+      (h.configuredOrigins || []).includes(url),
+      `已配置：${(h.configuredOrigins || []).join(', ')}`);
+
+    for (const [label, p] of [['员工端页面', '/'], ['管理端页面', '/admin']]) {
+      const r = await fetchJson(`${url}${p}`);
+      ok(`${label}可访问`, r.status === 200, `HTTP ${r.status}`);
+    }
+    ok('空库状态正常（0 员工 / 0 终端）', (h.employees || 0) === 0 && (h.terminals || 0) === 0,
+      `${h.employees} 员工 / ${h.terminals} 终端`);
+  }
+
+  child.kill('SIGKILL');
+  await new Promise((r2) => setTimeout(r2, 300));
+  for (const suffix of ['', '-wal', '-shm']) {
+    try { fs.unlinkSync(tmpDb + suffix); } catch { /* 已清 */ }
+  }
+}
+
 /* ── 远程服务检查 ── */
 async function checkRemote() {
   const health = await fetchJson(`${target.replace(/\/$/, '')}/api/health`);
@@ -199,14 +275,23 @@ function hostOf(u) {
 /* ── 主流程 ── */
 (async () => {
   console.log(`\n在岗哨 · 部署自检`);
-  console.log(`检查目标：${target}`);
+  if (SELF_TEST) {
+    console.log('模式：自检（临时起一个实例，检查完关掉）');
+  } else {
+    console.log(`检查目标：${target}`);
+  }
   console.log(`项目目录：${ROOT}\n`);
 
-  console.log('── 本地配置 ──');
-  checkLocal();
+  if (SELF_TEST) {
+    console.log('── 冒烟测试 ──');
+    await selfTest();
+  } else {
+    console.log('── 本地配置 ──');
+    checkLocal();
 
-  console.log('\n── 线上服务 ──');
-  await checkRemote();
+    console.log('\n── 线上服务 ──');
+    await checkRemote();
+  }
 
   console.log('\n════════════════════════════════════');
   for (const r of results) {

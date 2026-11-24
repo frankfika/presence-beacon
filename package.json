@@ -13,7 +13,8 @@
     "test:all": "node test/run-all.js",
     "experiment": "node test/experiment-public-fingerprint.js",
     "doctor": "node scripts/doctor.js",
-    "seed": "node scripts/seed.js"
+    "seed": "node scripts/seed.js",
+    "doctor:self": "node scripts/doctor.js --self-test"
   },
   "engines": {
     "node": ">=22.13.0"

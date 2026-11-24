@@ -2,6 +2,46 @@
 
 本文件记录每个版本的实际改动。GitHub Release 的说明同步自这里。
 
+## v1.0.1 — 2026-11-24
+
+[Release 页面](https://github.com/frankfika/presence-beacon/releases/tag/v1.0.1)
+
+补齐工程化尾巴，并修掉 v1.0.0 里 `npm test` 一片红的问题。
+
+### 修的
+
+- **`npm test` 之前会失败 5 项**。`test/*.test.js` 这个 glob 抓到了需要服务在跑的
+  5 个套件，clone 下来直接跑就是一片红（其实只是没起服务）。
+  → 需要服务的套件挪到 `test/suites/`，现在 `npm test` 是 106 pass / 0 fail。
+- **`package-lock.json` 和 `package.json` 不同步**。加了 playwright 到 devDependencies
+  却忘了更新 lock，`npm ci` 直接 EUSAGE 拒绝，CI 两个 job 全红。
+  → lock 补齐，`npm ci` 和 `npm ci --omit=dev` 都验证过。
+- **测试里写死 `require('/usr/local/lib/node_modules/playwright')`**。换台机器或上 CI 就崩。
+  → `test/pw.js` 本地依赖优先，回退全局。
+- **端口写死 8098 / 8155**。跟本机已有服务或并行的 CI 任务撞。
+  → 动态分配空闲端口。
+
+### 加的
+
+- **`.github/workflows/ci.yml`** —— 回归测试 + 真的 `docker build`。
+  第二个 job 存在是因为 Dockerfile 在没装 Docker 的机器上没机会验证，在 CI 里跑一次才算数。
+- **`scripts/doctor.js`（`npm run doctor`）** —— 部署自检。
+  一条条告诉你哪里配错了：HTTPS 有没有生效、RP_ID 和域名对不对得上、
+  数据文件权限对不对、管理员口令设没设。不堆栈。
+  `--self-test` 会自己起个临时实例冒烟测一遍再关掉。
+- **`scripts/seed.js`（`npm run seed`）** —— 演示数据，5 个员工 + 1 个终端。
+  只在空库上跑，不会覆盖真实数据。
+- **`deploy.sh`** —— 一键部署：systemd + Caddy 自动 HTTPS。
+  `--dry-run` 不碰系统任何文件，先看它要做什么。
+
+### 文档
+
+- 文档一致性检查从 49 条加到 **59 条**：新增守住脚本名、脚本路径、
+  套件数量、CI 配置、目录结构——防止这轮加的东西下次又悄悄漂移。
+- 使用手册命令速查修正：「全量回归（10 个套件）」→ 11 个。
+
+---
+
 ## v1.0.0 — 2026-11-23
 
 [Release 页面](https://github.com/frankfika/presence-beacon/releases/tag/v1.0.0) · [仓库](https://github.com/frankfika/presence-beacon)

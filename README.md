@@ -224,6 +224,7 @@ npm test                # 纯单元测试：规则引擎 + 安全审查 + 方案
 npm run test:all        # 全量回归：11 个套件，自己起服务、跑完自动清理
 npm run backup          # 数据备份（会先做 WAL checkpoint）
 npm run doctor          # 部署自检（也可 doctor https://你的域名 查线上）
+npm run doctor:self     # 冒烟测试：自己起个临时实例检查一遍再关掉
 npm run seed            # 造演示数据（只在空库上跑）
 node test/e2e.js        # 端到端测试（需要服务已启动）
 ```
