@@ -3,7 +3,7 @@
  * 在岗哨 · 服务端接口层对表
  *
  * 为了不动共享的 8099 服务和共享 data/presence.db，这里单独起一个进程：
- *   PORT=8098  DB_FILE=/tmp/qa-pb-<pid>/qa.db  ADMIN_PASSWORD=test123
+ *   PORT=自动分配  DB_FILE=/tmp/qa-pb-<pid>/qa.db  ADMIN_PASSWORD=test123
  * 用完即 kill（杀的是本测试自己起的进程，不是共享服务）。
  */
 
@@ -16,8 +16,20 @@ const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
 const { Store } = require(ROOT + '/server/db.js');
-const PORT = 8098;
-const BASE = `http://127.0.0.1:${PORT}`;
+// 动态端口：写死的端口会和并行任务 / 本机上已占用的服务打架
+function freePort() {
+  const net = require('node:net');
+  return new Promise((resolve, reject) => {
+    const srv = net.createServer();
+    srv.once('error', reject);
+    srv.listen(0, '127.0.0.1', () => {
+      const p = srv.address().port;
+      srv.close(() => resolve(p));
+    });
+  });
+}
+let PORT = 0;
+let BASE = '';
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'qa-pb-'));
 
 let child = null;
@@ -42,6 +54,8 @@ async function api(method, p, body, opts = {}) {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 test.before(async () => {
+  PORT = await freePort();
+  BASE = `http://127.0.0.1:${PORT}`;
   child = spawn(process.execPath, ['server/index.js'], {
     cwd: ROOT,
     env: {

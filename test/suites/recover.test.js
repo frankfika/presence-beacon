@@ -3,7 +3,7 @@
 //  2) 弱令牌不能追加生物特征凭证
 //  3) 用旧指纹做一次 assert → 换发强令牌 → 可以追加凭证
 //  4) 恢复过程不产生任何打卡记录
-const { chromium } = require('/usr/local/lib/node_modules/playwright');
+const { chromium } = require('../pw.js');
 const BASE = process.env.BASE || 'http://localhost:8099';
 const ADMIN_PW = process.env.ADMIN_PASSWORD || 'test123';
 

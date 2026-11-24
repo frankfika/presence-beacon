@@ -1,5 +1,5 @@
 // 终端闪屏 + 长按面板专项测试（覆盖 C 的 R4-5 / R4-7 / R4-12 / R4-13）
-const { chromium } = require('/usr/local/lib/node_modules/playwright');
+const { chromium } = require('../pw.js');
 const BASE = process.env.BASE || 'http://localhost:8099';
 const results = [];
 const ok = (id, title, pass, detail) => results.push({ id, title, pass, detail });

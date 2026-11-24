@@ -2,7 +2,7 @@
 // 覆盖 P0-1 大小写 / P1-1 bigbtn / P1-2 对比度 / P1-3 ink-3 / P1-4 超时 /
 //      P1-5 审批 tab / P2-1 rowlink / P2-2 输入框 / P2-3 表格 / P2-4 错误文案 /
 //      P2-5 闪屏遮挡 / P2-6 label 关联 / P3-1 字号
-const { chromium } = require('/usr/local/lib/node_modules/playwright');
+const { chromium } = require('../pw.js');
 const BASE = process.env.BASE || 'http://localhost:8099';
 const results = [];
 const ok = (id, title, pass, detail) => results.push({ id, title, pass, detail });

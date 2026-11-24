@@ -11,20 +11,34 @@ const fs = require('node:fs');
 const http = require('node:http');
 
 const ROOT = path.resolve(__dirname, '..');
-const PORT = Number(process.env.PORT || 8155);
-const BASE = `http://localhost:${PORT}`;
+const net = require('node:net');
+
+// 动态分配一个空闲端口：写死端口迟早会和别的进程 / 并行 CI 任务撞上
+function freePort() {
+  return new Promise((resolve, reject) => {
+    const srv = net.createServer();
+    srv.once('error', reject);
+    srv.listen(0, '127.0.0.1', () => {
+      const p = srv.address().port;
+      srv.close(() => resolve(p));
+    });
+  });
+}
+
+let PORT = Number(process.env.PORT) || 0;
+let BASE = '';
 
 const SUITES = [
   { name: '规则引擎单测', cmd: ['node', '--test', 'test/rules.test.js'] },
   { name: '方案对表测试', cmd: ['node', '--test', 'test-reports/api-parity.test.js', 'test-reports/edge-cases.test.js', 'test-reports/rules-spec-parity.test.js', 'test-reports/spec-math.test.js'] },
   { name: '安全审查', cmd: ['node', '--test', 'test/security.test.js'] },
   { name: '端到端（虚拟指纹）', cmd: ['node', 'test/e2e.js'] },
-  { name: '自助恢复', cmd: ['node', 'test/recover.test.js'] },
-  { name: '离线 / PWA', cmd: ['node', 'test/offline.test.js'] },
-  { name: '终端大屏', cmd: ['node', 'test/terminal.test.js'] },
-  { name: '响应式 / 触摸', cmd: ['node', 'test/responsive.test.js'] },
+  { name: '自助恢复', cmd: ['node', 'test/suites/recover.test.js'] },
+  { name: '离线 / PWA', cmd: ['node', 'test/suites/offline.test.js'] },
+  { name: '终端大屏', cmd: ['node', 'test/suites/terminal.test.js'] },
+  { name: '响应式 / 触摸', cmd: ['node', 'test/suites/responsive.test.js'] },
   { name: '本轮修复验证', cmd: ['node', 'test/fix-verify.js'] },
-  { name: 'C 报告遗留项', cmd: ['node', 'test/c-fixes.test.js'] },
+  { name: 'C 报告遗留项', cmd: ['node', 'test/suites/c-fixes.test.js'] },
   { name: '文档一致性', cmd: ['node', 'test/doc-consistency.js'] },
 ];
 
@@ -85,17 +99,9 @@ function stopServer(p) {
 }
 
 (async () => {
-  // 预检：端口上如果还挂着上一轮遗留的服务，先踢掉。
-  // 用 lsof 按端口找占用者 —— pgrep -f 会匹配到执行它的那条 shell 命令本身，
-  // 结果把自己杀了，真正的服务反而没被清掉。
-  try {
-    const pids = execSync(`lsof -ti tcp:${PORT} 2>/dev/null || true`, { encoding: 'utf8' })
-      .trim().split(/\s+/).filter(Boolean);
-    for (const pid of pids) {
-      try { process.kill(Number(pid), 'SIGKILL'); } catch { /* 已经退出了 */ }
-    }
-    if (pids.length) await new Promise((r) => setTimeout(r, 800));
-  } catch { /* 端口本来就空 */ }
+  if (!PORT) PORT = await freePort();
+  BASE = `http://localhost:${PORT}`;
+  console.log(`使用端口 ${PORT}`);
 
   child = startServer();
   if (!await waitUp()) {

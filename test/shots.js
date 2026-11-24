@@ -1,6 +1,6 @@
 'use strict';
 /* 截图脚本：用于人工核对三个界面 */
-const { chromium } = require('/usr/local/lib/node_modules/playwright');
+const { chromium } = require('./pw.js');
 const { Store } = require('../server/db.js');
 
 const BASE = process.env.BASE || 'http://localhost:8099';

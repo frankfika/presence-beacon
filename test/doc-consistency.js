@@ -127,8 +127,10 @@ for (const [script, doc] of [
     PKG.scripts[script] && (README.includes(doc) || MANUAL.includes(doc)),
     doc);
 }
-ok('DOC-script-runall', '全量回归命令 node test/run-all.js 可用且文档提到',
-  fs.existsSync(path.join(ROOT, 'test/run-all.js')) && README.includes('node test/run-all.js'),
+ok('DOC-script-runall', '全量回归命令可用且文档提到（node test/run-all.js 或 npm run test:all）',
+  fs.existsSync(path.join(ROOT, 'test/run-all.js'))
+    && (README.includes('node test/run-all.js') || README.includes('test:all'))
+    && (MANUAL.includes('node test/run-all.js') || MANUAL.includes('test:all')),
   'test/run-all.js');
 
 /* ── 9. Node 版本要求 ── */
@@ -224,6 +226,94 @@ ok('DOC-22', `管理端规则页 ${setFields} 项参数，手册里的名字一�
   ok('DOC-30', '架构说明提到的设备令牌强弱字段真实存在',
     /device_strong/.test(read('server/db.js')) && ARCH.includes('device_strong'),
     'db.js device_strong');
+
+  /* ── v1.0.1：新增的工具与目录结构 ── */
+  const pkg = PKG;
+
+  // 文档里写的 npm script 必须真的存在
+  const scriptNames = [...README.matchAll(/npm run ([a-z0-9:_-]+)/g)].map((m) => m[1]);
+  const manualScripts = [...MANUAL.matchAll(/npm run ([a-z0-9:_-]+)/g)].map((m) => m[1]);
+  const archScripts = [...ARCH.matchAll(/npm run ([a-z0-9:_-]+)/g)].map((m) => m[1]);
+  const allScripts = [...new Set([...scriptNames, ...manualScripts, ...archScripts])];
+  const missingScripts = allScripts.filter((s) => !pkg.scripts[s]);
+  ok('DOC-31', '文档里提到的 npm script 都真实存在',
+    missingScripts.length === 0,
+    missingScripts.length
+      ? `不存在: ${missingScripts.join(', ')} | 实际有: ${Object.keys(pkg.scripts).join(', ')}`
+      : `${allScripts.length} 个全部对上`);
+
+  // 文档里提到的 node 脚本路径必须真实存在
+  const nodePaths = [...new Set([
+    ...[...README.matchAll(/node ([a-zA-Z0-9_./-]+\.js)/g)].map((m) => m[1]),
+    ...[...MANUAL.matchAll(/node ([a-zA-Z0-9_./-]+\.js)/g)].map((m) => m[1]),
+    ...[...ARCH.matchAll(/node ([a-zA-Z0-9_./-]+\.js)/g)].map((m) => m[1]),
+  ])];
+  const missingPaths = nodePaths.filter((p) => !fs.existsSync(path.join(ROOT, p)));
+  ok('DOC-32', '文档里提到的脚本路径都真实存在',
+    missingPaths.length === 0,
+    missingPaths.length ? `不存在: ${missingPaths.join(', ')}` : `${nodePaths.length} 个全部存在`);
+
+  // 需要服务的套件必须在 test/suites/ 下，不能被 npm test 的 glob 抓到
+  const needServer = ['recover', 'offline', 'terminal', 'responsive', 'c-fixes'];
+  const inSuites = needServer.filter((n) => fs.existsSync(path.join(ROOT, 'test/suites', `${n}.test.js`)));
+  const stray = needServer.filter((n) =>
+    fs.existsSync(path.join(ROOT, 'test', `${n}.test.js`)));
+  ok('DOC-33', '需要服务的套件都在 test/suites/ 下（npm test 才不会一片红）',
+    inSuites.length === needServer.length && stray.length === 0,
+    stray.length ? `还在 test/ 根下: ${stray.join(', ')}` : `${inSuites.length} 个都在 test/suites/`);
+
+  // npm test 的 glob 不能命中需要服务的套件
+  const testGlob = pkg.scripts.test || '';
+  ok('DOC-34', 'npm test 不会误抓需要服务的套件',
+    !/test\/\*\.test\.js/.test(testGlob),
+    `npm test = ${testGlob}`);
+
+  // 套件数量：文档里说的数字必须跟实际文件对得上
+  const suiteFiles = [
+    ...fs.readdirSync(path.join(ROOT, 'test')).filter((f) => f.endsWith('.test.js')).map((f) => `test/${f}`),
+    ...fs.readdirSync(path.join(ROOT, 'test/suites')).filter((f) => f.endsWith('.test.js')).map((f) => `test/suites/${f}`),
+  ];
+  const runnerSuites = (read('test/run-all.js').match(/cmd:\s*\[/g) || []).length;
+  const docSuiteCount = Number((MANUAL.match(/全量回归（(\d+) 个套件/) || [])[1]
+    || (README.match(/全量回归：(\d+) 个套件/) || [])[1]
+    || (ARCH.match(/全量回归：(\d+) 个套件/) || [])[1]);
+  ok('DOC-35', '文档里说的「全量回归 N 个套件」跟编排器对得上',
+    docSuiteCount === runnerSuites,
+    `文档说 ${docSuiteCount}，run-all.js 里编排了 ${runnerSuites} 个`);
+
+  // 架构说明的套件表格里列的文件必须真实存在
+  const archTableFiles = [...ARCH.matchAll(/`(test[\/][a-zA-Z0-9_./-]+\.js|test-reports[\/]\*\.test\.js)`/g)]
+    .map((m) => m[1]);
+  const missingTable = archTableFiles
+    .filter((f) => !f.includes('*'))
+    .filter((f) => !fs.existsSync(path.join(ROOT, f)));
+  ok('DOC-36', '架构说明套件表里列的文件都真实存在',
+    missingTable.length === 0,
+    missingTable.length ? `不存在: ${missingTable.join(', ')}` : `${archTableFiles.length} 条路径全部存在`);
+
+  // 部署自检工具必须存在且可执行
+  ok('DOC-37', '部署自检脚本存在，且 package.json 里有对应命令',
+    fs.existsSync(path.join(ROOT, 'scripts/doctor.js'))
+      && pkg.scripts.doctor === 'node scripts/doctor.js',
+    'scripts/doctor.js + npm run doctor');
+
+  // 一键部署脚本：文档提到就必须存在
+  ok('DOC-38', '文档提到的一键部署脚本真实存在',
+    fs.existsSync(path.join(ROOT, 'deploy.sh'))
+      && (README.includes('deploy.sh') || MANUAL.includes('deploy.sh')),
+    'deploy.sh');
+
+  // CI 配置必须存在且包含两个 job
+  const ciPath = path.join(ROOT, '.github/workflows/ci.yml');
+  const ci = fs.existsSync(ciPath) ? fs.readFileSync(ciPath, 'utf8') : '';
+  ok('DOC-39', 'CI 配置存在，且包含回归测试和 Docker 构建两个 job',
+    ci.includes('test:') && ci.includes('docker:') && ci.includes('run-all.js'),
+    ci ? '两个 job 都在' : '没有 .github/workflows/ci.yml');
+
+  // 演示数据脚本
+  ok('DOC-40', '演示数据脚本存在，且 package.json 里有对应命令',
+    fs.existsSync(path.join(ROOT, 'scripts/seed.js')) && pkg.scripts.seed === 'node scripts/seed.js',
+    'scripts/seed.js + npm run seed');
 }
 
 /* ── 输出 ── */

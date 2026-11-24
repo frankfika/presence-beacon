@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: 回归测试
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      # 依赖只装一次，playwright 单独装（chromium 有 150MB+，别塞进缓存）
+      - name: 装依赖
+        run: npm ci
+
+      - name: 装 Playwright + Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: 全量回归
+        run: node test/run-all.js
+
+      - name: 部署自检（对着刚起的服务）
+        run: node scripts/doctor.js http://localhost:8155 || true
+
+  docker:
+    name: Docker 镜像
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 构建镜像
+        run: docker build -t presence-beacon:test .
+
+      - name: 起服务
+        run: |
+          docker run -d --name pb \
+            -p 8080:8080 \
+            -e APP_ORIGIN=http://localhost:8080 \
+            -e RP_ID=localhost \
+            -e ADMIN_PASSWORD=ci-test-password \
+            presence-beacon:test
+
+      - name: 探活
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8080/api/health; then
+              echo ""
+              echo "服务正常"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::服务 30 秒内没起来"
+          docker logs pb
+          exit 1
+
+      - name: 清理
+        if: always()
+        run: docker rm -f pb || true

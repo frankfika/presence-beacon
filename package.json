@@ -7,9 +7,13 @@
   "scripts": {
     "start": "node --env-file-if-exists=.env server/index.js",
     "dev": "node --watch server/index.js",
-    "test": "node --test test/*.test.js",
+    "test": "node --test test/rules.test.js test/security.test.js test-reports/*.test.js",
     "e2e": "node test/e2e.js",
-    "backup": "node scripts/backup.js"
+    "backup": "node scripts/backup.js",
+    "test:all": "node test/run-all.js",
+    "experiment": "node test/experiment-public-fingerprint.js",
+    "doctor": "node scripts/doctor.js",
+    "seed": "node scripts/seed.js"
   },
   "engines": {
     "node": ">=22.13.0"
@@ -19,5 +23,8 @@
     "@simplewebauthn/server": "^14.1.0",
     "jsqr": "^1.4.0",
     "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "playwright": "^1.65.1"
   }
 }

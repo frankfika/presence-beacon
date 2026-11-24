@@ -7,7 +7,7 @@
  *
  * 跑法：先 npm start 起服务，再 node test/e2e.js
  */
-const { chromium } = require('/usr/local/lib/node_modules/playwright');
+const { chromium } = require('./pw.js');
 
 const BASE = process.env.BASE || 'http://localhost:8099';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'test123';

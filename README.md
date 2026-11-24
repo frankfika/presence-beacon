@@ -188,16 +188,23 @@ public/
   app.css       三端共用样式
 scripts/
   backup.js     数据备份（WAL checkpoint + 快照）
+  doctor.js     部署自检（HTTPS / RP_ID / 数据权限 / 口令，一步步告诉你）
+  seed.js       演示数据（只在空库上跑，造 5 个员工 + 1 个终端）
 test/
   rules.test.js       规则引擎单测（22）
   e2e.js              端到端（CDP 虚拟指纹认证器，37）
   security.test.js    安全审查（31）
-  recover.test.js     自助恢复链路（10）
-  offline.test.js     离线 / PWA（9）
-  terminal.test.js    终端大屏（9）
-  responsive.test.js  响应式 / 触摸目标（21）
-  c-fixes.test.js     前端问题清单回归（15）
-  doc-consistency.js  文档一致性检查（41：README/手册里的数字、字段、接口 == 代码）
+  fix-verify.js       本轮修复验证（3）
+  doc-consistency.js  文档一致性检查（59：README/手册里的数字、字段、接口 == 代码）
+  run-all.js          全量回归编排（自己起服务、跑完清理）
+  pw.js               Playwright 加载器（本地优先，回退全局）
+  suites/             需要服务在跑的套件
+    recover.test.js     自助恢复链路（10）
+    offline.test.js     离线 / PWA（9）
+    terminal.test.js    终端大屏（9）
+    responsive.test.js  响应式 / 触摸目标（21）
+    c-fixes.test.js     前端问题清单回归（15）
+deploy.sh       一键部署（systemd + Caddy 自动 HTTPS，带 --dry-run）
   run-all.js          全量回归 runner（自己起服务，跑完自动清理）
 test-reports/
   A-security.md  B-rules.md  C-frontend.md  D-deploy.md   四份 agent 审查报告
@@ -213,10 +220,19 @@ docs/
 ```bash
 npm start               # 启动（自动读取 .env）
 npm run dev             # 开发模式（改了自动重启）
-npm test                # 规则引擎单测
-npm run e2e             # 端到端测试（需要服务已启动）
+npm test                # 纯单元测试：规则引擎 + 安全审查 + 方案对表
+npm run test:all        # 全量回归：11 个套件，自己起服务、跑完自动清理
 npm run backup          # 数据备份（会先做 WAL checkpoint）
-node test/run-all.js    # 全量回归：11 个套件，自己起服务、跑完自动清理
+npm run doctor          # 部署自检（也可 doctor https://你的域名 查线上）
+npm run seed            # 造演示数据（只在空库上跑）
+node test/e2e.js        # 端到端测试（需要服务已启动）
+```
+
+一键部署（Linux / systemd / Caddy 自动 HTTPS）：
+
+```bash
+sudo ./deploy.sh --domain pb.你的公司.com --email you@你的公司.com
+sudo ./deploy.sh --domain pb.你的公司.com --email you@你的公司.com --dry-run  # 先看它要做什么
 ```
 
 健康检查（`secure` 必须是 `true`，否则指纹不可用）：

@@ -1,7 +1,7 @@
 // 本轮修复的专项验证
 //  R5-20 / R5-20b  管理端「导出 CSV」能真正下载到文件（带 token 的 fetch + blob）
 //  （终端闪屏相关由 test/terminal.test.js 完整覆盖）
-const { chromium } = require('/usr/local/lib/node_modules/playwright');
+const { chromium } = require('./pw.js');
 const BASE = process.env.BASE || 'http://localhost:8099';
 
 const results = [];

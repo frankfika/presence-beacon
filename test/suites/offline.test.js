@@ -2,7 +2,7 @@
 //  R6-9  断网后仍能打开应用外壳（HTML+CSS 渲染，且不把页面整个换成错误）
 //  R6-16 apple-touch-icon 是 180×180
 //  SW    终端页 / 管理页也注册了 Service Worker
-const { chromium } = require('/usr/local/lib/node_modules/playwright');
+const { chromium } = require('../pw.js');
 const BASE = process.env.BASE || 'http://localhost:8099';
 const fs = require('node:fs');
 

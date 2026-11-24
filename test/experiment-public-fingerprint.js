@@ -17,7 +17,7 @@
  */
 const http = require('node:http');
 const crypto = require('node:crypto');
-const { chromium } = require('/usr/local/lib/node_modules/playwright');
+const { chromium } = require('./pw.js');
 const { Store } = require('../server/db.js');
 const { WebAuthnService, b64url, fromB64url } = require('../server/webauthn.js');
 

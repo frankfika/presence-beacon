@@ -1,5 +1,5 @@
 // 响应式 + 触摸目标专项测试（覆盖 C 的 R2 系列）
-const { chromium } = require('/usr/local/lib/node_modules/playwright');
+const { chromium } = require('../pw.js');
 const BASE = process.env.BASE || 'http://localhost:8099';
 const results = [];
 const ok = (id, title, pass, detail) => results.push({ id, title, pass, detail });
