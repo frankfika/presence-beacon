@@ -26,9 +26,12 @@ jobs:
           node-version: '22'
           cache: npm
 
-      # 依赖只装一次，playwright 单独装（chromium 有 150MB+，别塞进缓存）
+      # package.json 和 package-lock.json 必须同步，否则 npm ci 直接拒绝
+      # （手改 package.json 加依赖忘了更新 lock，就是这么翻车的）
       - name: 装依赖
         run: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
 
       - name: 装 Playwright + Chromium
         run: npx playwright install --with-deps chromium
